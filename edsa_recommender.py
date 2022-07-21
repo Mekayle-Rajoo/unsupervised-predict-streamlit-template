@@ -27,6 +27,9 @@
 """
 # Streamlit dependencies
 import streamlit as st
+import joblib,os
+import streamlit.components.v1 as components
+
 
 # Data handling dependencies
 import pandas as pd
@@ -41,7 +44,62 @@ from recommenders.collaborative_based import collab_model
 from recommenders.content_based import content_model
 
 # Data Loading
-title_list = load_movie_titles('resources/data/movies.csv')
+movies = pd.read_csv('resources/data/movies1.csv')
+train_data = pd.read_csv('resources/data/ratings1.csv')
+
+unpickled_model = joblib.load(open("resources/models/SVD.pkl","rb"))
+
+
+def callback():
+    st.session_state.button_clicked = True
+    
+    
+    
+def collaborative(movie1,movie2, movie3, min_year):
+    
+    movies123 = train_data[(train_data["title"]==movie1)|(train_data["title"]==movie2)|(train_data["title"]==movie3) \
+                       & (train_data["rating"]>4)]
+    
+    watch_counts = pd.DataFrame(movies123["userId"].value_counts())
+    max_watch_counts = watch_counts["userId"].max()
+    
+    users = list(watch_counts[watch_counts["userId"]==max_watch_counts].index)
+    
+    movieid = list(set(movies["movieId"][movies["year"]>min_year-1]))
+    
+    bestmatched = []
+
+    for uid in users:
+        for iid in movieid:
+            userprediction = unpickled_model.predict(uid, iid)[3]
+            if userprediction>4.5:
+                bestmatched.append(iid)
+                
+    bestmatched = list(set(bestmatched))
+    
+    titles = movies[movies["movieId"].isin(bestmatched) & (movies["year"]>min_year-1)][["title","imdblinks"]]
+    
+    return titles.sample(n = 10).reset_index()
+    
+def set_bg_hack_url():
+    '''
+    A function to unpack an image from url and set as bg.
+    Returns
+    -------
+    The background.
+    '''
+        
+    st.markdown(
+         f"""
+         <style>
+         .stApp {{
+             background: url("https://i.ibb.co/Smvzshf/fall-movies-index-1628968089-01.jpg");
+             background-size: cover
+         }}
+         </style>
+         """,
+         unsafe_allow_html=True
+     )
 
 # App declaration
 def main():
@@ -51,11 +109,14 @@ def main():
     
     # Creates a main title and subheader on your page -
     # these are static across all pages
+  
+    set_bg_hack_url()
+   
     
     st.image("resources/logogif.gif")
     
    
-    
+    #components.html("<style>:root {background-color: grey;}</style>" + b)
     
     page_options = ["HOME","Solution Overview", "FAQ", "Insights","Download our app", "Contact Us"]
 
@@ -75,6 +136,10 @@ def main():
     
     if page_selection == "HOME":
         # Header contents
+     
+        if "button_clicked" not in st.session_state:    
+            st.session_state.button_clicked = False
+        
         st.image("resources/moviesgif.gif")
         
         
@@ -83,15 +148,15 @@ def main():
         if genre == "sign up":
             email = st.text_input('Ready to watch? Enter your email to start a membership', '')
             
-            if st.button("next"):
+            if (st.button("Next", on_click = callback) or st.session_state.button_clicked): 
             
                 if (re.search('^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$',email)):
                     st.write('Welcome to Lumiere', email.split("@")[0].capitalize(),","," looks like you are new here.\n To customize your\
                     experience please select 3 movies which you enjoy.")
 
-                    movie_1 = st.selectbox('First Option',title_list[14930:15200])
-                    movie_2 = st.selectbox('Second Option',title_list[25055:25255])
-                    movie_3 = st.selectbox('Third Option',title_list[21100:21200])
+                    movie_1 = st.selectbox('First Option',movies["title"][14930:15200])
+                    movie_2 = st.selectbox('Second Option',movies["title"][25055:25255])
+                    movie_3 = st.selectbox('Third Option',movies["title"][21100:21200])
                     fav_movies = [movie_1,movie_2,movie_3]
 
                     # Perform top-10 movie recommendation generation
@@ -114,12 +179,28 @@ def main():
             password = st.text_input('password', '', type="password")
       
          
-            if st.button("Login"):
+            if (st.button("Login", on_click = callback) or st.session_state.button_clicked):
+                
             
                 if (re.search('^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$',title)) and password != "":
-                
+
                     st.write('Welcome back to Explore!', title.split("@")[0].capitalize(),"userId ","(",random.randint(0, 10000038),")","here are some titles we think you may enjoy")
+
+                    movie_1 = st.selectbox('First Option',movies["title"][14930:15200])
+                    movie_2 = st.selectbox('Second Option',movies["title"][25055:25255])
+                    movie_3 = st.selectbox('Third Option',movies["title"][21100:21200])
                     
+                    if st.button("Recommend"):
+                        tops = collaborative(movie_1,movie_2, movie_3, 1990)
+                        st.subheader("Users with similar taste also enjoyed:")
+                        for i in range(10):
+                            st.subheader(tops["title"][i])
+                            st.subheader(tops["imdblinks"][i])
+                            st.subheader(" ")
+                            st.subheader(" ")
+                            
+
+
                 else:
                     st.write("Please enter valid login details")
         

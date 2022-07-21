@@ -1,12 +1,8 @@
 """
-
     Single Value Decomposition plus plus (SVDpp) model training.
-
     Author: Explore Data Science Academy.
-
     Description: Simple script to train and save an instance of the
     SVDpp algorithm on MovieLens data.
-
 """
 # Script dependencies
 import numpy as np
