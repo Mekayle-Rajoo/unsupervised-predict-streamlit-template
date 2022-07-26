@@ -131,6 +131,17 @@ def main():
         st.title("Solution Overview")
         st.write("Describe your winning approach on this page")
 
+    if page_selection == "Contact Us":
+        st.title("Contact Us")
+        st.write("Website:www.lumiere.com") 
+        st.write("Address:123 Richard St., Sandton, 1683") 
+        st.write("Tel: +27 32 944 8443") 
+        st.write("Operating Hours")
+        st.write("Monday - Friday, 8am - 5pm")
+        st.write("Saturday, 8am - 1pm") 
+        st.write("Sunday, 9am - 1pm")
+    
+
     # You may want to add more sections here for aspects such as an EDA,
     # or to provide your business pitch.
 
